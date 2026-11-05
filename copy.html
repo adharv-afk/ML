@@ -1,0 +1,1592 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Python Code</title>
+</head>
+
+<body>
+
+<pre><code>exp1a data preprocessing
+import numpy as np
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import LabelEncoder, MinMaxScaler, StandardScaler
+
+# Step 2: Load the dataset
+df = pd.read_csv("Titanic-Dataset.csv")
+
+# Step 3: Display the first 5 rows
+print("--- First 5 Rows ---")
+print(df.head())
+
+# Step 4: Display the last 5 rows
+print("\n--- Last 5 Rows ---")
+print(df.tail())
+
+# Step 5: Check dataset dimensions (rows, columns)
+print("\n--- Dataset Shape ---")
+print("Shape:", df.shape)
+
+# Step 6: Print data types for each feature
+print("\n--- Data Types ---")
+print(df.dtypes)
+
+# Step 7: Filter rows where Age is greater than or equal to 19
+adults_df = df[df["Age"] >= 19]
+print("\n--- Filtered Dataset (Age >= 19) ---")
+print(adults_df.head())
+
+# Step 8: View summary statistics for numerical features
+print("\n--- Summary Statistics ---")
+print(df.describe())
+
+# Step 9: Check count of missing (NaN) values per column
+print("\n--- Initial Missing Values ---")
+print(df.isnull().sum())
+
+# Step 10: Inspect records where Cabin is present
+print("\n--- Non-Null Cabin Records ---")
+print(df[df["Cabin"].notnull()].head())
+
+# Step 11: Impute missing 'Age' values with the median age
+df["Age"] = df["Age"].fillna(df["Age"].median())
+
+# Step 12: Verify missing values after Age imputation
+print("\n--- Missing Values (After Age Imputation) ---")
+print(df.isnull().sum())
+
+# Step 13: Impute missing 'Embarked' values with the most frequent value (mode)
+df["Embarked"] = df["Embarked"].fillna(df["Embarked"].mode()[0])
+
+# Step 14: Verify missing values after Embarked imputation
+print("\n--- Missing Values (After Embarked Imputation) ---")
+print(df.isnull().sum())
+
+# Step 15: Drop the 'Cabin' column (due to high percentage of missing values)
+df.drop("Cabin", axis=1, inplace=True)
+
+# Step 16: Verify missing values after dropping Cabin column
+print("\n--- Missing Values (After Dropping Cabin) ---")
+print(df.isnull().sum())
+
+# Step 17: Apply Label Encoding on 'Sex' column
+le = LabelEncoder()
+df["Sex_Label"] = le.fit_transform(df["Sex"])
+print("\n--- Label Encoded Sex Feature ---")
+print(df[["Sex", "Sex_Label"]].head())
+
+# Step 18: Apply One-Hot Encoding on 'Embarked' column
+embark_encoder = pd.get_dummies(df["Embarked"], prefix="Embarked")
+print("\n--- One-Hot Encoded Embarked Columns ---")
+print(embark_encoder.head())
+
+# Step 19: Apply Min-Max Scaling on 'Age' and 'Fare' (scales values between 0 and 1)
+min_max_scaler = MinMaxScaler()
+df_minmax = df.copy()
+df_minmax[["Age", "Fare"]] = min_max_scaler.fit_transform(df_minmax[["Age", "Fare"]])
+print("\n--- Min-Max Scaled Age and Fare ---")
+print(df_minmax[["Age", "Fare"]].head())
+
+# Step 20: Apply Standard Scaling on 'Age' and 'Fare' (mean=0, std=1)
+std_scaler = StandardScaler()
+df[["Age", "Fare"]] = std_scaler.fit_transform(df[["Age", "Fare"]])
+print("\n--- Standard Scaled Age and Fare ---")
+print(df[["Age", "Fare"]].head())
+
+# Step 21: Separate input features (X) and target output (y)
+X = df.drop("Survived", axis=1)
+y = df["Survived"]
+
+# Step 22: Split dataset into 80% training and 20% testing sets
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.2, random_state=42
+)
+
+# Step 23: Verify shapes of split datasets
+print("\n--- Train-Test Split Shapes ---")
+print("x_train shape:", X_train.shape)
+print("x_test shape :", X_test.shape)
+print("y_train shape:", y_train.shape)
+print("y_test shape :", y_test.shape)
+
+################################################################################
+exp 1b mle and map
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+
+from sklearn.datasets import fetch_california_housing
+from scipy.stats import norm
+
+# -----------------------------------------------------------------------------
+# 1. Load Dataset
+# -----------------------------------------------------------------------------
+housing = fetch_california_housing()
+df = pd.DataFrame(housing.data, columns=housing.feature_names)
+
+# Display the first 5 rows
+print("Dataset Head:")
+print(df.head())
+print("-" * 50)
+
+# -----------------------------------------------------------------------------
+# 2. Maximum Likelihood Estimation (MLE)
+# -----------------------------------------------------------------------------
+x = df['MedInc']
+
+# Compute sample statistics (MLE estimates for Normal distribution)
+mle_mean = np.mean(x)
+mle_variance = np.var(x)
+sample_mean = mle_mean  # Setting sample_mean explicitly (fixes Cell 9)
+
+print(f"MLE Mean     : {mle_mean:.6f}")
+print(f"MLE Variance : {mle_variance:.6f}")
+print("-" * 50)
+
+# -----------------------------------------------------------------------------
+# 3. Maximum A Posteriori (MAP) Estimation
+# -----------------------------------------------------------------------------
+# Prior parameters
+prior_mean = 4
+prior_var = 1
+n = len(x)
+
+# Closed-form MAP estimate for the mean of a Gaussian distribution with a Gaussian prior
+map_mean = ((prior_var * n * mle_mean) + (mle_variance * prior_mean)) / (
+    prior_var * n + mle_variance
+)
+
+print(f"MAP Mean     : {map_mean:.6f}")
+print("-" * 50)
+
+# -----------------------------------------------------------------------------
+# 4. Visualization (Likelihood, Prior, and Posterior Distributions)
+# -----------------------------------------------------------------------------
+# Generate grid of potential mean values
+mu_values = np.linspace(mle_mean - 2, mle_mean + 2, 500)
+
+# Compute probability density functions
+likelihood = norm.pdf(mu_values, loc=mle_mean, scale=np.sqrt(mle_variance / n))
+prior = norm.pdf(mu_values, loc=prior_mean, scale=np.sqrt(prior_var))
+
+# Posterior is proportional to Likelihood * Prior
+posterior = likelihood * prior
+posterior = posterior / np.max(posterior)  # Normalized to max peak for display
+
+# Plotting
+plt.figure(figsize=(8, 5))
+plt.plot(mu_values, likelihood, label='Likelihood', color='blue')
+plt.plot(mu_values, prior, label='Prior', color='orange')
+plt.plot(mu_values, posterior, label='Posterior', color='green')
+
+plt.title('MLE vs MAP Estimation for Median Income')
+plt.xlabel('Mean ($\mu$)')
+plt.ylabel('Density')
+plt.grid(True, linestyle='--', alpha=0.5)
+plt.legend()
+plt.show()
+
+
+####################################################################################################
+exp2a naive bayes
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.datasets import fetch_20newsgroups
+from sklearn.model_selection import train_test_split
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.naive_bayes import MultinomialNB, BernoulliNB
+from sklearn.metrics import (
+    accuracy_score, precision_score, recall_score, 
+    f1_score, roc_auc_score, confusion_matrix, ConfusionMatrixDisplay
+)
+
+# 1. Load dataset
+news = fetch_20newsgroups(subset='all')
+X = news.data
+y = news.target
+print("Number of Documents:", len(X))
+
+# 2. Train-test split
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.2, random_state=42
+)
+
+# 3. Vectorization using TF-IDF
+vectorizer = TfidfVectorizer()
+X_train_tfidf = vectorizer.fit_transform(X_train)
+X_test_tfidf = vectorizer.transform(X_test)
+
+# 4. Multinomial Naive Bayes Model
+mnb = MultinomialNB()
+mnb.fit(X_train_tfidf, y_train)
+
+pred_mnb = mnb.predict(X_test_tfidf)
+
+print("Multinomial Accuracy:", accuracy_score(y_test, pred_mnb))
+print("Precision:", precision_score(y_test, pred_mnb, average='weighted'))
+print("Recall:", recall_score(y_test, pred_mnb, average='weighted'))
+print("F1 Score:", f1_score(y_test, pred_mnb, average='weighted')) # Fixed fl_score -> f1_score
+
+prob = mnb.predict_proba(X_test_tfidf)
+auc = roc_auc_score(y_test, prob, multi_class='ovr') # Fixed missing '='
+
+# Plot Confusion Matrix for MultinomialNB
+cm_mnb = confusion_matrix(y_test, pred_mnb)
+disp_mnb = ConfusionMatrixDisplay(confusion_matrix=cm_mnb)
+disp_mnb.plot()
+plt.show()
+
+# 5. Bernoulli Naive Bayes Model
+bnb = BernoulliNB()
+bnb.fit(X_train_tfidf, y_train)
+
+pred_bnb = bnb.predict(X_test_tfidf) # Added proper prediction step for BNB
+
+# Plot Confusion Matrix for BernoulliNB
+cm_bnb = confusion_matrix(y_test, pred_bnb)
+disp_bnb = ConfusionMatrixDisplay(confusion_matrix=cm_bnb)
+disp_bnb.plot()
+plt.show()
+
+
+###############################################################################################
+exp 2b k nearest neighbour
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+
+from sklearn.datasets import fetch_openml
+from sklearn.model_selection import train_test_split
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.preprocessing import MinMaxScaler
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
+
+# 1. Fetch Dataset
+fashion = fetch_openml("Fashion-MNIST", version=1, as_frame=False)
+X = fashion.data
+y = fashion.target.astype(int)
+
+# 2. Inspect Dataset
+print("Shape of X:", X.shape)
+print("Shape of y:", y.shape)
+print(X[0])
+print(y[0])
+
+# 3. Visualize First Image
+plt.imshow(X[0].reshape(28, 28), cmap="gray")
+plt.title("Class: " + str(y[0]))
+plt.show()
+
+# 4. Subset Data & Train-Test Split
+X = X[:10000]
+y = y[:10000]
+
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.2, random_state=42
+)
+
+# 5. KNN Model (Without Scaling)
+K = 5
+knn = KNeighborsClassifier(n_neighbors=K)
+knn.fit(X_train, y_train)
+
+y_pred = knn.predict(X_test)
+
+accuracy_without = accuracy_score(y_test, y_pred)
+precision_without = precision_score(y_test, y_pred, average="weighted")
+recall_without = recall_score(y_test, y_pred, average="weighted")
+f1_without = f1_score(y_test, y_pred, average="weighted")  # Fixed typo: fl_score -> f1_score
+
+print("accuracy (without scaling):", accuracy_without)
+print("precision (without scaling):", precision_without)
+print("Recall (without scaling):", recall_without)
+print("f1-score (without scaling):", f1_without)
+
+# 6. Feature Scaling & KNN Model (With Scaling)
+scaler = MinMaxScaler()
+X_train_scaled = scaler.fit_transform(X_train)
+X_test_scaled = scaler.transform(X_test)
+
+knn_scaled = KNeighborsClassifier(n_neighbors=5)
+knn_scaled.fit(X_train_scaled, y_train)
+
+y_pred_scaled = knn_scaled.predict(X_test_scaled)
+
+accuracy_with = accuracy_score(y_test, y_pred_scaled)
+precision_with = precision_score(y_test, y_pred_scaled, average="weighted")
+recall_with = recall_score(y_test, y_pred_scaled, average="weighted")
+f1_with = f1_score(y_test, y_pred_scaled, average="weighted")  # Fixed typo: fl_score -> f1_score
+
+print("Accuracy (with scaling):", accuracy_with)
+print("Precision (with scaling):", precision_with)
+print("Recall (with scaling):", recall_with)
+print("f1-score (with scaling):", f1_with)
+
+# 7. Finding Optimal K Value
+k_values = range(1, 16, 2)
+accuracies = []
+
+for k in k_values:  # Fixed typo: kink_values -> k in k_values
+    knn = KNeighborsClassifier(n_neighbors=k)
+    knn.fit(X_train_scaled, y_train)
+    y_pred = knn.predict(X_test_scaled)
+    accuracy = accuracy_score(y_test, y_pred)
+    accuracies.append(accuracy)
+    print(f"K = {k}, Accuracy = {accuracy}")
+
+# Plot Accuracy vs K Value
+plt.plot(k_values, accuracies, marker="o")
+plt.xlabel("Value of K")
+plt.ylabel("Accuracy")
+plt.title("Accuracy vs K Value")
+plt.xticks(k_values)
+plt.grid(True)
+plt.show()
+
+
+################################################################################
+exp3 linear regression
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+from sklearn.datasets import fetch_california_housing
+from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
+from sklearn.model_selection import train_test_split
+
+# 1. Load Dataset
+housing = fetch_california_housing()
+df = pd.DataFrame(housing.data, columns=housing.feature_names)
+df["Target"] = housing.target
+print(df.head())
+
+# 2. Select Features & Target
+X = df[["AveRooms"]].values
+y = df["Target"].values
+
+# 3. Train-Test Split
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.2, random_state=42
+)
+
+# 4. Gradient Descent Optimization
+m = 0
+b = 0
+learning_rate = 0.001
+epochs = 1000
+n = len(X_train)
+cost_history = []
+
+for i in range(epochs):
+    y_pred = m * X_train.flatten() + b
+    cost = np.mean((y_train - y_pred) ** 2)
+    cost_history.append(cost)
+    
+    dm = (-2 / n) * np.sum(X_train.flatten() * (y_train - y_pred))
+    db = (-2 / n) * np.sum(y_train - y_pred)
+    
+    m = m - learning_rate * dm
+    b = b - learning_rate * db
+
+# 5. Evaluate Gradient Descent Model
+y_pred_gd = m * X_test.flatten() + b
+mse_gd = mean_squared_error(y_test, y_pred_gd)
+rmse_gd = np.sqrt(mse_gd)
+mae_gd = mean_absolute_error(y_test, y_pred_gd)
+r2_gd = r2_score(y_test, y_pred_gd)
+
+print("MSE =", mse_gd)
+print("RMSE =", rmse_gd)
+print("MAE =", mae_gd)
+print("R2 Score =", r2_gd)
+
+# 6. Normal Equation Optimization
+X_train_b = np.c_[np.ones((len(X_train), 1)), X_train]
+theta = np.linalg.inv(X_train_b.T.dot(X_train_b)).dot(X_train_b.T).dot(y_train)
+
+X_test_b = np.c_[np.ones((len(X_test), 1)), X_test]
+y_pred_ne = X_test_b.dot(theta)
+
+# 7. Evaluate Normal Equation Model
+mse = mean_squared_error(y_test, y_pred_ne)
+rmse = np.sqrt(mse)
+mae = mean_absolute_error(y_test, y_pred_ne)
+r2 = r2_score(y_test, y_pred_ne)
+
+print("MSE =", mse)
+print("RMSE =", rmse)
+print("MAE =", mae)
+print("R2 Score =", r2)
+
+# 8. Plot Linear Regression Fit
+plt.figure(figsize=(8, 5))
+plt.scatter(X_test, y_test, alpha=0.5)
+sorted_idx = X_test.flatten().argsort()
+plt.plot(X_test[sorted_idx], y_pred_ne[sorted_idx], color="red")
+plt.xlabel("Average Rooms")
+plt.ylabel("House Price")
+plt.title("Linear Regression Fit")
+plt.show()
+
+# 9. Plot Gradient Descent Convergence
+plt.figure(figsize=(8, 5))
+plt.plot(cost_history)
+plt.xlabel("Iterations")
+plt.ylabel("Cost")
+plt.title("Gradient Descent Convergence")
+plt.show()
+
+
+##########################################################
+exp4 decision tree
+# Import required libraries
+import pandas as pd
+import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
+from sklearn.tree import DecisionTreeClassifier, plot_tree
+from sklearn.metrics import accuracy_score
+
+# Load dataset
+df = pd.read_csv("online_retail(1).csv")
+
+# Display the first few rows
+print(df.head())
+
+# Drop missing values
+df = df.dropna()
+
+# Feature engineering
+df["TotalAmount"] = df["Quantity"] * df["UnitPrice"]
+df["Segment"] = (df["TotalAmount"] > 100).astype(int)
+
+# Separate features and target
+X = df[["Quantity", "UnitPrice"]]
+y = df["Segment"]
+
+# Train-test split
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.2, random_state=42
+)
+
+# Train Decision Tree Classifier
+tree = DecisionTreeClassifier(criterion="entropy", random_state=42)
+tree.fit(X_train, y_train)
+
+# Make predictions and evaluate accuracy
+y_pred = tree.predict(X_test)
+print("Accuracy:", accuracy_score(y_test, y_pred))
+# Output: Accuracy: 0.9998770985423887
+
+# Print Feature Importance
+print("\nFeature Importance")
+for feature, score in zip(X.columns, tree.feature_importances_):
+    print(feature, ":", score)
+# Output:
+# Feature Importance
+# Quantity : 0.7051149740968052
+# UnitPrice : 0.2948850259031947
+
+# Plot the Decision Tree
+plt.figure(figsize=(12, 6))
+plot_tree(
+    tree,
+    feature_names=X.columns,
+    class_names=["Low", "High"],
+    filled=True
+)
+plt.show()
+
+# Hyperparameter tuning: Tree Depth vs Accuracy
+depth = [2, 4, 6, 8]
+accuracy = []
+
+for d in depth:
+    model = DecisionTreeClassifier(
+        criterion="entropy",
+        max_depth=d,
+        random_state=42
+    )
+    model.fit(X_train, y_train)
+    pred = model.predict(X_test)
+    accuracy.append(accuracy_score(y_test, pred))
+
+# Plot Tree Depth vs Accuracy
+plt.plot(depth, accuracy, marker="o")
+plt.xlabel("Tree Depth")
+plt.ylabel("Accuracy")
+plt.title("Tree Depth vs Accuracy")
+plt.show()
+
+################################################################################
+exp5 logistic regression MLE and MAP
+
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+from sklearn.linear_model import LogisticRegression
+from imblearn.over_sampling import RandomOverSampler
+
+from sklearn.metrics import (
+    accuracy_score, precision_score, recall_score, f1_score,
+    confusion_matrix, roc_curve, auc
+)
+
+# 1. Load and Inspect Data
+data = pd.read_csv("breast-cancer.csv")
+print("First Five Rows")
+print(data.head())
+
+print("\nDataset Information")
+print(data.info())
+
+print("\nMissing Values")
+print(data.isnull().sum())
+
+# 2. Data Preprocessing
+if "id" in data.columns:
+    data = data.drop("id", axis=1)
+
+if "Unnamed: 32" in data.columns:
+    data = data.drop("Unnamed: 32", axis=1)
+
+data["diagnosis"] = data["diagnosis"].map({"M": 1, "B": 0})
+
+X = data.drop("diagnosis", axis=1)
+y = data["diagnosis"]
+
+print("\nClass Distribution Before Oversampling")
+print(y.value_counts())
+
+# Train-Test Split
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.20, random_state=42
+)
+
+# Oversampling
+oversample = RandomOverSampler(random_state=42)
+X_train, y_train = oversample.fit_resample(X_train, y_train)
+
+print("\nClass Distribution After Oversampling")
+print(pd.Series(y_train).value_counts())
+
+# Feature Scaling
+scaler = StandardScaler()
+X_train = scaler.fit_transform(X_train)
+X_test = scaler.transform(X_test)
+
+# 3. Model Training
+
+# MLE Model
+mle_model = LogisticRegression(penalty=None, max_iter=1000)
+mle_model.fit(X_train, y_train)
+mle_prediction = mle_model.predict(X_test)
+
+# MAP L1 Model
+map_l1 = LogisticRegression(penalty="l1", solver="liblinear", max_iter=1000)
+map_l1.fit(X_train, y_train)
+l1_prediction = map_l1.predict(X_test)
+
+# MAP L2 Model
+map_l2 = LogisticRegression(penalty="l2", max_iter=1000)
+map_l2.fit(X_train, y_train)
+l2_prediction = map_l2.predict(X_test)
+
+# 4. Evaluation Function
+def evaluate_model(name, actual, predicted):
+    print("\n===============================")
+    print(name)
+    print("===============================")
+    print("Accuracy:", accuracy_score(actual, predicted))
+    print("Precision:", precision_score(actual, predicted))
+    print("Recall:", recall_score(actual, predicted))
+    print("F1 Score:", f1_score(actual, predicted))
+    print("\nConfusion Matrix")
+    print(confusion_matrix(actual, predicted))
+
+# Evaluate Models
+evaluate_model("MLE Logistic Regression", y_test, mle_prediction)
+evaluate_model("MAP Logistic Regression (L1)", y_test, l1_prediction)
+evaluate_model("MAP Logistic Regression (L2)", y_test, l2_prediction)
+
+# 5. ROC Curve & AUC Scores
+mle_probability = mle_model.predict_proba(X_test)[:, 1]
+l1_probability = map_l1.predict_proba(X_test)[:, 1]
+l2_probability = map_l2.predict_proba(X_test)[:, 1]
+
+fpr1, tpr1, threshold1 = roc_curve(y_test, mle_probability)
+fpr2, tpr2, threshold2 = roc_curve(y_test, l1_probability)
+fpr3, tpr3, threshold3 = roc_curve(y_test, l2_probability)
+
+auc1 = auc(fpr1, tpr1)
+auc2 = auc(fpr2, tpr2)
+auc3 = auc(fpr3, tpr3)
+
+print("\nAUC Scores")
+print("MLE :", auc1)
+print("MAP L1 :", auc2)
+print("MAP L2 :", auc3)
+
+# Plot ROC Curves
+plt.figure(figsize=(8, 6))
+plt.plot(fpr1, tpr1, label="MLE (AUC = %.3f)" % auc1)
+plt.plot(fpr2, tpr2, label="MAP L1 (AUC = %.3f)" % auc2)
+plt.plot(fpr3, tpr3, label="MAP L2 (AUC = %.3f)" % auc3)
+plt.plot([0, 1], [0, 1], 'k--')
+plt.xlabel("False Positive Rate")
+plt.ylabel("True Positive Rate")
+plt.title("ROC Curve Comparison")
+plt.legend()
+plt.show()
+
+###############################################################################3
+exp6 logistic regression and decision tree
+# Cell 1: Imports
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.datasets import fetch_openml
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import LabelEncoder, StandardScaler
+from sklearn.linear_model import LogisticRegression
+from sklearn.tree import DecisionTreeClassifier, plot_tree
+from imblearn.over_sampling import RandomOverSampler, SMOTE
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, roc_auc_score
+
+# Cell 2: Fetch OpenML Adult Dataset
+adult = fetch_openml(name="adult", version=2, as_frame=True)
+data = adult.frame
+data.head()
+
+# Cell 3: Dataset Shape
+data.shape
+
+# Cell 4: Data Preprocessing / Handle Missing Values
+data.replace("?", np.nan, inplace=True)
+data.dropna(inplace=True)
+print("Dataset Shape: ", data.shape)
+
+# Cell 5: Label Encoding Categorical Features
+le = LabelEncoder()
+for col in data.columns:
+    if data[col].dtype == "object" or str(data[col].dtype) == "category":
+        data[col] = le.fit_transform(data[col].astype(str))
+data.head()
+
+# Cell 6: Separate Features and Target
+X = data.iloc[:, :-1]
+y = data.iloc[:, -1]
+
+# Cell 7: Plot Class Distribution
+print("Class Distribution: ")
+print(y.value_counts())
+y.value_counts().plot(kind="bar")
+plt.title("Class Distribution")
+plt.xlabel("Income")
+plt.ylabel("Count")
+plt.show()
+
+# Cell 8: Train-Test Split and Feature Scaling
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.2, random_state=42, stratify=y
+)
+
+scaler = StandardScaler()
+X_train = scaler.fit_transform(X_train)
+X_test = scaler.transform(X_test)
+
+# Cell 9: Logistic Regression (Baseline)
+lr = LogisticRegression(max_iter=1000)
+lr.fit(X_train, y_train)
+y_pred_lr = lr.predict(X_test)
+y_prob_lr = lr.predict_proba(X_test)[:, -1]
+
+print("LOGISTIC REGRESSION")
+print("Accuracy:", accuracy_score(y_test, y_pred_lr))
+print("Precision:", precision_score(y_test, y_pred_lr))
+print("Recall:", recall_score(y_test, y_pred_lr))
+print("F1 Score:", f1_score(y_test, y_pred_lr))
+print("roc auc:", roc_auc_score(y_test, y_prob_lr))
+
+# Cell 10: Decision Tree (Baseline)
+dt = DecisionTreeClassifier(random_state=42)
+dt.fit(X_train, y_train)
+y_pred_dt = dt.predict(X_test)
+y_prob_dt = dt.predict_proba(X_test)[:, 1]
+
+print("DECISION TREE")
+print("Accuracy:", accuracy_score(y_test, y_pred_dt))
+print("Precision:", precision_score(y_test, y_pred_dt))
+print("Recall:", recall_score(y_test, y_pred_dt))
+print("F1 Score:", f1_score(y_test, y_pred_dt))
+print("ROC AUC:", roc_auc_score(y_test, y_prob_dt))
+
+# Cell 11: Random Over-Sampling (ROS)
+ros = RandomOverSampler(random_state=42)
+X_train_ros, y_train_ros = ros.fit_resample(X_train, y_train)
+
+print("Balanced Classes")
+print(y_train_ros.value_counts())
+
+# Cell 12: Models Trained with ROS Data
+lr_ros = LogisticRegression(max_iter=1000)
+lr_ros.fit(X_train_ros, y_train_ros)
+y_pred_lr_ros = lr_ros.predict(X_test)
+y_prob_lr_ros = lr_ros.predict_proba(X_test)[:, 1]
+
+dt_ros = DecisionTreeClassifier(random_state=42)
+dt_ros.fit(X_train_ros, y_train_ros)
+y_pred_dt_ros = dt_ros.predict(X_test)
+y_prob_dt_ros = dt_ros.predict_proba(X_test)[:, 1]
+
+# Cell 13: Logistic Regression Feature Coefficients Plot
+coefficients = pd.Series(lr_ros.coef_[0], index=X.columns)
+coefficients = coefficients.sort_values()
+
+plt.figure(figsize=(12, 5))
+coefficients.plot(kind="bar")
+plt.title("Logistic Regression Feature Coefficients")
+plt.xlabel("Features")
+plt.ylabel("Coefficient Value")
+plt.show()
+
+# Cell 14: Decision Tree Structure Visualization
+plt.figure(figsize=(20, 10))
+plot_tree(
+    dt_ros,
+    feature_names=X.columns,
+    class_names=["<=50K", ">50K"],
+    filled=True,
+    fontsize=8,
+    max_depth=3
+)
+plt.title("Decision Tree")
+plt.show()
+
+# Cell 15: SMOTE Oversampling
+smote = SMOTE(random_state=42)
+X_train_smote, y_train_smote = smote.fit_resample(X_train, y_train)
+
+print("Original Training Set:")
+print(y_train.value_counts())
+print("\nTraining Set After SMOTE:")
+print(y_train_smote.value_counts())
+
+# Cell 16: Logistic Regression (SMOTE)
+lr_smote = LogisticRegression(max_iter=1000)
+lr_smote.fit(X_train_smote, y_train_smote)
+y_pred_lr_smote = lr_smote.predict(X_test)
+y_prob_lr_smote = lr_smote.predict_proba(X_test)[:, 1]
+
+print("logistic regression")
+print("Accuracy:", accuracy_score(y_test, y_pred_lr_smote))
+print("Precision:", precision_score(y_test, y_pred_lr_smote))
+print("Recall:", recall_score(y_test, y_pred_lr_smote))
+print("F1 Score:", f1_score(y_test, y_pred_lr_smote))
+print("ROC AUC:", roc_auc_score(y_test, y_prob_lr_smote))
+
+# Cell 17: Decision Tree (SMOTE)
+dt_smote = DecisionTreeClassifier(random_state=42)
+dt_smote.fit(X_train_smote, y_train_smote)
+y_pred_dt_smote = dt_smote.predict(X_test)
+y_prob_dt_smote = dt_smote.predict_proba(X_test)[:, 1]
+
+print("DECISION TREE (SMOTE)")
+print("Accuracy:", accuracy_score(y_test, y_pred_dt_smote))
+print("Precision:", precision_score(y_test, y_pred_dt_smote))
+print("Recall:", recall_score(y_test, y_pred_dt_smote))
+print("F1 Score:", f1_score(y_test, y_pred_dt_smote))
+print("ROC AUC:", roc_auc_score(y_test, y_prob_dt_smote))
+
+# Cell 18: Summary Metrics Table
+results = pd.DataFrame({
+    "Model": [
+        "LR",
+        "LR + ROS",
+        "LR + SMOTE",
+        "DT",
+        "DT + ROS",
+        "DT + SMOTE"
+    ],
+    "Accuracy": [
+        accuracy_score(y_test, y_pred_lr),
+        accuracy_score(y_test, y_pred_lr_ros),
+        accuracy_score(y_test, y_pred_lr_smote),
+        accuracy_score(y_test, y_pred_dt),
+        accuracy_score(y_test, y_pred_dt_ros),
+        accuracy_score(y_test, y_pred_dt_smote)
+    ],
+    "Precision": [
+        precision_score(y_test, y_pred_lr),
+        precision_score(y_test, y_pred_lr_ros),
+        precision_score(y_test, y_pred_lr_smote),
+        precision_score(y_test, y_pred_dt),
+        precision_score(y_test, y_pred_dt_ros),
+        precision_score(y_test, y_pred_dt_smote)
+    ],
+    "Recall": [
+        recall_score(y_test, y_pred_lr),
+        recall_score(y_test, y_pred_lr_ros),
+        recall_score(y_test, y_pred_lr_smote),
+        recall_score(y_test, y_pred_dt),
+        recall_score(y_test, y_pred_dt_ros),
+        recall_score(y_test, y_pred_dt_smote)
+    ],
+    "F1 Score": [
+        f1_score(y_test, y_pred_lr),
+        f1_score(y_test, y_pred_lr_ros),
+        f1_score(y_test, y_pred_lr_smote),
+        f1_score(y_test, y_pred_dt),
+        f1_score(y_test, y_pred_dt_ros),
+        f1_score(y_test, y_pred_dt_smote)
+    ],
+    "ROC AUC": [
+        roc_auc_score(y_test, y_prob_lr),
+        roc_auc_score(y_test, y_prob_lr_ros),
+        roc_auc_score(y_test, y_prob_lr_smote),
+        roc_auc_score(y_test, y_prob_dt),
+        roc_auc_score(y_test, y_prob_dt_ros),
+        roc_auc_score(y_test, y_prob_dt_smote)
+    ]
+})
+results
+###################################################################################
+exp7 ridge and lasso
+# 1. Imports
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+
+from sklearn.datasets import load_diabetes
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+from sklearn.linear_model import LinearRegression, Ridge, Lasso
+from sklearn.metrics import mean_squared_error, r2_score
+
+# 2. Load Dataset
+diabetes = load_diabetes()
+X = diabetes.data
+y = diabetes.target
+
+print("Dataset shape:", X.shape)
+print("\nFeature names:")
+print(diabetes.feature_names)
+print("\nFirst 5 target values:")
+print(y[:5])
+
+# 3. Train-Test Split & Scaling
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.20, random_state=42
+)
+
+scaler = StandardScaler()
+X_train = scaler.fit_transform(X_train)
+X_test = scaler.transform(X_test)
+
+# 4. Model Initialization & Training
+linear_model = LinearRegression()
+ridge_model = Ridge(alpha=1.0)
+lasso_model = Lasso(alpha=1.0)
+
+linear_model.fit(X_train, y_train)
+ridge_model.fit(X_train, y_train)
+lasso_model.fit(X_train, y_train)
+
+# 5. Model Predictions
+linear_train_pred = linear_model.predict(X_train)
+linear_test_pred = linear_model.predict(X_test)
+
+ridge_train_pred = ridge_model.predict(X_train)
+ridge_test_pred = ridge_model.predict(X_test)
+
+lasso_train_pred = lasso_model.predict(X_train)
+lasso_test_pred = lasso_model.predict(X_test)
+
+# 6. Evaluation Metrics Helper
+def calculate_metrics(y_true, y_pred):
+    mse = mean_squared_error(y_true, y_pred)
+    rmse = np.sqrt(mse)
+    r2 = r2_score(y_true, y_pred)
+    return mse, rmse, r2
+
+linear_train = calculate_metrics(y_train, linear_train_pred)
+ridge_train = calculate_metrics(y_train, ridge_train_pred)
+lasso_train = calculate_metrics(y_train, lasso_train_pred)
+
+linear_test = calculate_metrics(y_test, linear_test_pred)
+ridge_test = calculate_metrics(y_test, ridge_test_pred)
+lasso_test = calculate_metrics(y_test, lasso_test_pred)
+
+# 7. Print Training Performance Table
+print("=" * 65)
+print("TRAINING PERFORMANCE")
+print("=" * 65)
+train_results = pd.DataFrame({
+    "Model": ["Linear Regression", "Ridge Regression", "Lasso Regression"],
+    "MSE": [linear_train[0], ridge_train[0], lasso_train[0]],
+    "RMSE": [linear_train[1], ridge_train[1], lasso_train[1]],
+    "R2": [linear_train[2], ridge_train[2], lasso_train[2]]
+})
+print(train_results.round(4).to_string(index=False))
+
+# 8. Print Testing Performance Table
+print("\n" + "=" * 65)
+print("TESTING PERFORMANCE")
+print("=" * 65)
+test_results = pd.DataFrame({
+    "Model": ["Linear Regression", "Ridge Regression", "Lasso Regression"],
+    "MSE": [linear_test[0], ridge_test[0], lasso_test[0]],
+    "RMSE": [linear_test[1], ridge_test[1], lasso_test[1]],
+    "R2": [linear_test[2], ridge_test[2], lasso_test[2]]
+})
+print(test_results.round(4).to_string(index=False))
+
+# 9. Model Coefficients Analysis
+print("\n" + "=" * 65)
+print("MODEL COEFFICIENTS")
+print("=" * 65)
+coefficient_table = pd.DataFrame({
+    "Feature": diabetes.feature_names,
+    "Linear": linear_model.coef_,
+    "Ridge": ridge_model.coef_,
+    "Lasso": lasso_model.coef_
+})
+print(coefficient_table.round(4).to_string(index=False))
+
+zero_coefficients = np.sum(lasso_model.coef_ == 0)
+print("\nNumber of zero coefficients in Lasso:", zero_coefficients)
+
+# 10. Visualization: Training vs Testing MSE Plot
+models = ["Linear Regression", "Ridge Regression", "Lasso Regression"]
+train_mse = [linear_train[0], ridge_train[0], lasso_train[0]]
+test_mse = [linear_test[0], ridge_test[0], lasso_test[0]]
+
+x = np.arange(len(models))
+width = 0.35
+
+plt.figure(figsize=(9, 5))
+plt.bar(x - width / 2, train_mse, width, label="Training MSE")
+plt.bar(x + width / 2, test_mse, width, label="Testing MSE")
+plt.xticks(x, ["Linear", "Ridge", "Lasso"])
+plt.ylabel("MSE")
+plt.title("Training vs Testing MSE")
+plt.legend()
+plt.grid(axis="y")
+plt.show()
+
+##########################################################################3
+exp8 multi layer percepton
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+from sklearn.neural_network import MLPClassifier
+from sklearn.metrics import accuracy_score, classification_report
+
+# 1. Load and Inspect Dataset
+data = pd.read_csv("winequality-red.csv", sep=";")
+
+print("First 5 rows of the dataset:")
+print(data.head())
+
+print("\nDataset Shape:")
+print(data.shape)
+
+print("\nMissing Values:")
+print(data.isnull().sum())
+
+# 2. Separate Features and Target
+X = data.drop("quality", axis=1)
+y = data["quality"]
+
+print("\nInput Shape:")
+print(X.shape)
+
+print("\nTarget Values:")
+print(y.value_counts().sort_index())
+
+# 3. Train-Test Split
+X_train, X_test, y_train, y_test = train_test_split(
+    X, 
+    y, 
+    test_size=0.20, 
+    random_state=42, 
+    stratify=y
+)
+print("\nTraining Data Shape:")
+print(X_train.shape)
+
+print("\nTesting Data Shape:")
+print(X_test.shape)
+
+# 4. Feature Standardization
+scaler = StandardScaler()
+X_train = scaler.fit_transform(X_train)
+X_test = scaler.transform(X_test)
+print("\nStandardization completed.")
+
+# 5. Define Experiments
+experiments = [
+    {"name": "MLP_ReLU", "hidden": (64, 32), "activation": "relu"},
+    {"name": "MLP_Sigmoid", "hidden": (64, 32), "activation": "logistic"},
+    {"name": "MLP_Tanh", "hidden": (64, 32), "activation": "tanh"}
+]
+
+# 6. Model Training & Evaluation Loop
+results = []
+loss_curves = {}
+models = {}
+
+for exp in experiments:
+    print("\n=============================")
+    print("Training:", exp["name"])
+    print("=============================")
+    
+    mlp = MLPClassifier(
+        hidden_layer_sizes=exp["hidden"],
+        activation=exp["activation"],
+        solver="adam",
+        max_iter=150,
+        random_state=42
+    )
+    
+    mlp.fit(X_train, y_train)
+    y_pred = mlp.predict(X_test)
+    
+    accuracy = accuracy_score(y_test, y_pred)
+    
+    models[exp["name"]] = mlp
+    results.append({
+        "Model": exp["name"],
+        "Architecture": "64 -> 32",
+        "Activation": exp["activation"],
+        "Accuracy": accuracy
+    })
+    loss_curves[exp["name"]] = mlp.loss_curve_
+    
+    print("Test Accuracy:", round(accuracy * 100, 2), "%")
+
+# 7. Results Comparison
+results_df = pd.DataFrame(results)
+print("\n==================================")
+print("MODEL COMPARISON")
+print("==================================")
+print(results_df)
+
+# 8. Best Model Selection
+best_model = results_df.loc[results_df["Accuracy"].idxmax()]
+print("\n==================================")
+print("BEST MODEL")
+print("==================================")
+print("Model:", best_model["Model"])
+print("Architecture:", best_model["Architecture"])
+print("Activation:", best_model["Activation"])
+print("Accuracy:", round(best_model["Accuracy"] * 100, 2), "%")
+
+
+######################################################################################
+exp 9 svm
+import matplotlib.pyplot as plt
+import numpy as np
+from sklearn.datasets import load_iris
+from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+from sklearn.svm import SVC
+
+# =========================================================
+# Step 1: Load and Prepare Data
+# =========================================================
+# Load the Iris dataset
+iris = load_iris()[cite: 4]
+
+# Select only Petal Length (column index 2) and Petal Width (column index 3)
+X = iris.data[:, [2, 3]][cite: 4]
+
+# Encode target: Setosa (class 0) = 1, Non-Setosa (classes 1 & 2) = 0
+y = (iris.target == 0).astype(int)[cite: 4]
+
+# =========================================================
+# Step 2: Train / Test Split & Feature Scaling
+# =========================================================
+# 70% train, 30% test split stratified by target y
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.3, random_state=42, stratify=y
+)[cite: 4]
+
+# Standardize features using StandardScaler
+scaler = StandardScaler()[cite: 4]
+X_train_scaled = scaler.fit_transform(X_train)[cite: 4]
+X_test_scaled = scaler.transform(X_test)[cite: 4]
+
+# =========================================================
+# Step 3: Train, Evaluate, and Visualize SVM for C = 0.1, 1, 10
+# =========================================================
+C_values = [0.1, 1, 10][cite: 4]
+
+# Set up side-by-side visualization subplots
+fig, axes = plt.subplots(1, 3, figsize=(18, 5))[cite: 4]
+
+# Grid boundaries for decision boundary visualization
+x_min = X_train_scaled[:, 0].min() - 1[cite: 4]
+x_max = X_train_scaled[:, 0].max() + 1[cite: 4]
+y_min = X_train_scaled[:, 1].min() - 1[cite: 4]
+y_max = X_train_scaled[:, 1].max() + 1[cite: 4]
+
+xx, yy = np.meshgrid(
+    np.linspace(x_min, x_max, 500), np.linspace(y_min, y_max, 500)
+)[cite: 4]
+grid = np.c_[xx.ravel(), yy.ravel()][cite: 4]
+
+print(f"{'C Value':<8} | {'Supp Vectors':<12} | {'Margin Width':<12} | {'Accuracy':<8} | {'Precision':<9} | {'Recall':<6} | {'F1-Score':<8}")[cite: 4]
+print("-" * 80)
+
+for idx, C in enumerate(C_values):[cite: 4]
+    # Train Linear SVM model
+    model = SVC(kernel="linear", C=C, random_state=42)[cite: 4]
+    model.fit(X_train_scaled, y_train)[cite: 4]
+
+    # Predict test data
+    y_pred = model.predict(X_test_scaled)[cite: 4]
+
+    # Compute evaluation metrics
+    accuracy = accuracy_score(y_test, y_pred)[cite: 4]
+    precision = precision_score(y_test, y_pred)[cite: 4]
+    recall = recall_score(y_test, y_pred)[cite: 4]
+    f1 = f1_score(y_test, y_pred)[cite: 4]
+
+    # Compute geometric details
+    w = model.coef_[0][cite: 4]
+    margin_width = 2 / np.linalg.norm(w)[cite: 4]
+    num_sv = len(model.support_vectors_)[cite: 4]
+
+    print(f"{C:<8} | {num_sv:<12} | {margin_width:<12.3f} | {accuracy:<8.2f} | {precision:<9.2f} | {recall:<6.2f} | {f1:<8.2f}")[cite: 4]
+
+    # Plot decision grid
+    ax = axes[idx][cite: 4]
+    decision = model.decision_function(grid).reshape(xx.shape)[cite: 4]
+
+    # Plot margins (-1, +1) and decision boundary (0)
+    ax.contour(
+        xx,
+        yy,
+        decision,
+        levels=[-1, 0, 1],
+        linestyles=["--", "-", "--"],
+        colors=["yellow", "teal", "purple"],
+    )[cite: 4]
+
+    # Plot training points
+    ax.scatter(
+        X_train_scaled[y_train == 0, 0],
+        X_train_scaled[y_train == 0, 1],
+        c="tab:blue",
+        label="Non-Setosa",
+        alpha=0.8,
+    )[cite: 4]
+    ax.scatter(
+        X_train_scaled[y_train == 1, 0],
+        X_train_scaled[y_train == 1, 1],
+        c="tab:orange",
+        label="Setosa",
+        alpha=0.8,
+    )[cite: 4]
+
+    # Highlight support vectors with black circles
+    ax.scatter(
+        model.support_vectors_[:, 0],
+        model.support_vectors_[:, 1],
+        s=150,
+        facecolors="none",
+        edgecolors="black",
+        linewidths=2,
+        label="Support Vectors",
+    )[cite: 4]
+
+    ax.set_title(f"Linear SVM - C = {C}")[cite: 4]
+    ax.set_xlabel("Petal Length (Standardized)")[cite: 4]
+    ax.set_ylabel("Petal Width (Standardized)")[cite: 4]
+    ax.legend(loc="upper right")[cite: 4]
+    ax.grid(True)[cite: 4]
+
+plt.tight_layout()
+plt.show()
+
+########################################################
+exp 10 hyper parameter
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+from sklearn.datasets import fetch_openml
+from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score
+from sklearn.model_selection import train_test_split
+from sklearn.neural_network import MLPClassifier
+
+# ---------------------------------------------------------
+# Step 1: Load and Preprocess Dataset
+# ---------------------------------------------------------
+# Fetch the Fashion-MNIST dataset from OpenML
+fashion = fetch_openml("Fashion-MNIST", version=1, as_frame=False)[cite: 1]
+
+X = fashion.data[cite: 1]
+y = fashion.target.astype(int)[cite: 1]
+
+print("Shape of X:", X.shape)[cite: 1]
+print("Shape of y:", y.shape)[cite: 1]
+print("First image pixel values:", X[0])[cite: 1]
+print("Class of first image:", y[0])[cite: 1]
+
+# Display the first image
+plt.imshow(X[0].reshape(28, 28), cmap="gray")[cite: 1]
+plt.title("Class: " + str(y[0]))[cite: 1]
+plt.show()[cite: 1]
+
+# Subsample dataset to keep training time manageable (first 10,000 samples)
+X = X[:10000][cite: 1]
+y = y[:10000][cite: 1]
+
+# Train/Test split (80% train, 20% test)
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.2, random_state=42
+)[cite: 1]
+
+# Normalize pixel values from [0, 255] to [0.0, 1.0]
+X_train = X_train / 255.0[cite: 1]
+X_test = X_test / 255.0[cite: 1]
+
+
+# ---------------------------------------------------------
+# Step 2: Experiment 1 - Learning Rate
+# ---------------------------------------------------------
+learning_rates = [0.001, 0.01, 0.1][cite: 1]
+print("Learning rates to evaluate:", learning_rates)[cite: 1]
+
+losses = [][cite: 1]
+
+for lr in learning_rates:[cite: 1]
+    mlp = MLPClassifier(
+        hidden_layer_sizes=(128,),
+        learning_rate_init=lr,
+        batch_size=64,
+        max_iter=20,
+        random_state=42,
+    )[cite: 1]
+    mlp.fit(X_train, y_train)[cite: 1]
+    losses.append(mlp.loss_curve_)[cite: 1]
+    print(
+        "Learning Rate =",
+        lr,
+        "Accuracy =",
+        mlp.score(X_test, y_test),
+    )[cite: 1]
+
+# Plot convergence curves for Learning Rates
+for i in range(len(learning_rates)):[cite: 1]
+    plt.plot(losses[i], label="LR = " + str(learning_rates[i]))[cite: 1]
+
+plt.xlabel("Epoch")[cite: 1]
+plt.ylabel("Loss")[cite: 1]
+plt.title("Convergence for Different Learning Rates")[cite: 1]
+plt.legend()[cite: 1]
+plt.show()[cite: 1]
+
+
+# ---------------------------------------------------------
+# Step 3: Experiment 2 - Batch Size
+# ---------------------------------------------------------
+batch_sizes = [32, 64, 128][cite: 1]
+print("Batch sizes to evaluate:", batch_sizes)[cite: 1]
+
+batch_losses = [][cite: 1]
+
+for batch in batch_sizes:[cite: 1]
+    mlp = MLPClassifier(
+        hidden_layer_sizes=(128,),
+        learning_rate_init=0.001,
+        batch_size=batch,
+        max_iter=20,
+        random_state=42,
+    )[cite: 1]
+    mlp.fit(X_train, y_train)[cite: 1]
+    batch_losses.append(mlp.loss_curve_)[cite: 1]
+    print(
+        "Batch Size =",
+        batch,
+        "Accuracy =",
+        mlp.score(X_test, y_test),
+    )[cite: 1]
+
+# Plot convergence curves for Batch Sizes
+for i in range(len(batch_sizes)):[cite: 1]
+    plt.plot(batch_losses[i], label="Batch = " + str(batch_sizes[i]))[cite: 1]
+
+plt.xlabel("Epoch")[cite: 1]
+plt.ylabel("Loss")[cite: 1]
+plt.title("Effect of Batch Size")[cite: 1]
+plt.legend()[cite: 1]
+plt.show()[cite: 1]
+
+
+# ---------------------------------------------------------
+# Step 4: Experiment 3 - Number of Epochs
+# ---------------------------------------------------------
+epochs_values = [5, 10, 20][cite: 1]
+print("Epoch values to evaluate:", epochs_values)[cite: 1]
+
+epoch_accuracies = [][cite: 1]
+
+for ep in epochs_values:[cite: 1]
+    mlp = MLPClassifier(
+        hidden_layer_sizes=(128,),
+        learning_rate_init=0.001,
+        batch_size=64,
+        max_iter=ep,
+        random_state=42,
+    )[cite: 1]
+    mlp.fit(X_train, y_train)[cite: 1]
+    y_pred = mlp.predict(X_test)[cite: 1]
+    accuracy = accuracy_score(y_test, y_pred)[cite: 1]
+    epoch_accuracies.append(accuracy)[cite: 1]
+    print("Epochs =", ep, "Accuracy =", accuracy)[cite: 1]
+
+# Plot Accuracy vs. Number of Epochs
+plt.plot(epochs_values, epoch_accuracies, marker="o")[cite: 1]
+plt.xlabel("Number of Epochs")[cite: 1]
+plt.ylabel("Accuracy")[cite: 1]
+plt.title("Accuracy vs Number of Epochs")[cite: 1]
+plt.xticks(epochs_values)[cite: 1]
+plt.grid()[cite: 1]
+plt.show()[cite: 1]
+
+
+# ---------------------------------------------------------
+# Step 5: Final Model & Evaluation
+# ---------------------------------------------------------
+# Train the optimal model configuration
+mlp = MLPClassifier(
+    hidden_layer_sizes=(128,),
+    learning_rate_init=0.001,
+    batch_size=64,
+    max_iter=10,
+    random_state=42,
+)[cite: 1]
+mlp.fit(X_train, y_train)[cite: 1]
+
+# Predictions & Metrics
+y_pred = mlp.predict(X_test)[cite: 1]
+
+accuracy = accuracy_score(y_test, y_pred)[cite: 1]
+precision = precision_score(y_test, y_pred, average="weighted")[cite: 1]
+recall = recall_score(y_test, y_pred, average="weighted")[cite: 1]
+f1 = f1_score(y_test, y_pred, average="weighted")[cite: 1]
+
+print("Neural Network")[cite: 1]
+print("Accuracy :", accuracy)[cite: 1]
+print("Precision:", precision)[cite: 1]
+print("Recall   :", recall)[cite: 1]
+print("F1-Score :", f1)[cite: 1]
+
+# Plot final convergence curve
+plt.plot(mlp.loss_curve_)[cite: 1]
+plt.xlabel("Epoch")[cite: 1]
+plt.ylabel("Loss")[cite: 1]
+plt.title("Neural Network Convergence")[cite: 1]
+plt.grid()[cite: 1]
+plt.show()[cite: 1]
+
+
+#####################################################################################
+hierarchial vs k means exp11
+import matplotlib.pyplot as plt
+import pandas as pd
+from scipy.cluster.hierarchy import dendrogram, linkage
+from sklearn.cluster import AgglomerativeClustering, KMeans
+from sklearn.preprocessing import StandardScaler
+
+# =========================================================
+# Step 1: Load Dataset
+# =========================================================
+data = pd.read_csv("Mall_Customers.csv")[cite: 2]
+print("First 5 rows of the dataset:")[cite: 2]
+print(data.head())[cite: 2]
+
+# =========================================================
+# Step 2: Select & Scale Features
+# =========================================================
+# Select features for clustering
+X = data[["Annual Income (k$)", "Spending Score (1-100)"]][cite: 2]
+
+# Feature scaling
+scaler = StandardScaler()[cite: 2]
+X_scaled = scaler.fit_transform(X)[cite: 2]
+
+print("\nData after scaling:")[cite: 2]
+print(X_scaled[:5])[cite: 2]
+
+# =========================================================
+# Step 3: Elbow Method for K-Means
+# =========================================================
+inertia = [][cite: 2]
+for k in range(1, 11):[cite: 2]
+    kmeans = KMeans(n_clusters=k, random_state=42, n_init=10)[cite: 2]
+    kmeans.fit(X_scaled)[cite: 2]
+    inertia.append(kmeans.inertia_)[cite: 2]
+
+# Plot Elbow graph
+plt.figure()[cite: 2]
+plt.plot(range(1, 11), inertia, marker="o")[cite: 2]
+plt.xlabel("Number of Clusters (K)")[cite: 2]
+plt.ylabel("Inertia")[cite: 2]
+plt.title("Elbow Method")[cite: 2]
+plt.show()[cite: 2]
+
+# =========================================================
+# Step 4: Apply K-Means Clustering
+# =========================================================
+# From the Elbow graph, assume K = 5
+kmeans = KMeans(n_clusters=5, random_state=42, n_init=10)[cite: 2]
+clusters_kmeans = kmeans.fit_predict(X_scaled)[cite: 2]
+
+print("\nK-Means Cluster Labels:")[cite: 2]
+print(clusters_kmeans)[cite: 2]
+
+# Plot K-Means clusters
+plt.figure()[cite: 2]
+plt.scatter(X_scaled[:, 0], X_scaled[:, 1], c=clusters_kmeans)[cite: 2]
+plt.xlabel("Annual Income")[cite: 2]
+plt.ylabel("Spending Score")[cite: 2]
+plt.title("K-Means Clustering")[cite: 2]
+plt.show()[cite: 2]
+
+# =========================================================
+# Step 5: Hierarchical Clustering - Dendrogram
+# =========================================================
+# Create dendrogram
+linked = linkage(X_scaled, method="ward")[cite: 2]
+
+plt.figure(figsize=(10, 5))[cite: 2]
+dendrogram(linked)[cite: 2]
+plt.title("Hierarchical Clustering Dendrogram")[cite: 2]
+plt.xlabel("Customers")[cite: 2]
+plt.ylabel("Distance")[cite: 2]
+plt.show()[cite: 2]
+
+# =========================================================
+# Step 6: Apply Agglomerative Clustering
+# =========================================================
+# Apply Agglomerative Clustering
+hierarchical = AgglomerativeClustering(n_clusters=5, linkage="ward")[cite: 2]
+clusters_hierarchical = hierarchical.fit_predict(X_scaled)[cite: 2]
+
+print("\nHierarchical Cluster Labels:")[cite: 2]
+print(clusters_hierarchical)[cite: 2]
+
+# Plot Hierarchical Clusters
+plt.figure()[cite: 2]
+plt.scatter(X_scaled[:, 0], X_scaled[:, 1], c=clusters_hierarchical)[cite: 2]
+plt.xlabel("Annual Income")[cite: 2]
+plt.ylabel("Spending Score")[cite: 2]
+plt.title("Agglomerative Hierarchical Clustering")[cite: 2]
+plt.show()[cite: 2]
+
+######################################################################################
+bagging vs boosting exp 12
+import matplotlib.pyplot as plt
+import pandas as pd
+from sklearn.ensemble import AdaBoostClassifier, RandomForestClassifier
+from sklearn.metrics import (
+    accuracy_score,
+    f1_score,
+    precision_score,
+    recall_score,
+    roc_auc_score,
+    roc_curve,
+)
+from sklearn.model_selection import train_test_split
+from sklearn.tree import DecisionTreeClassifier
+
+# =========================================================
+# Step 1: Load and Preprocess Dataset
+# =========================================================
+# Load dataset
+data = pd.read_csv("Titanic-Dataset.csv")[cite: 3]
+print("First 5 rows of the dataset:")[cite: 3]
+print(data.head())[cite: 3]
+
+# Select features and target variable
+X = data[["Pclass", "Sex", "Age", "SibSp", "Parch", "Fare", "Embarked"]][cite: 3]
+y = data["Survived"][cite: 3]
+
+# Convert categorical columns into numeric columns via one-hot encoding
+X = pd.get_dummies(X, columns=["Sex", "Embarked"], drop_first=True)[cite: 3]
+
+# Fill missing values with median values
+X = X.fillna(X.median())[cite: 3]
+
+# Split data into training (80%) and testing (20%) sets
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.2, random_state=42
+)[cite: 3]
+
+# =========================================================
+# Step 2: Bagging - Train a Random Forest
+# =========================================================
+random_forest = RandomForestClassifier(n_estimators=100, random_state=42)[cite: 3]
+random_forest.fit(X_train, y_train)[cite: 3]
+
+y_pred_rf = random_forest.predict(X_test)[cite: 3]
+y_prob_rf = random_forest.predict_proba(X_test)[:, 1][cite: 3]
+
+# =========================================================
+# Step 3: Boosting - Train an AdaBoost Classifier
+# =========================================================
+decision_tree = DecisionTreeClassifier(max_depth=1, random_state=42)[cite: 3]
+
+adaboost = AdaBoostClassifier(
+    estimator=decision_tree, n_estimators=100, random_state=42
+)[cite: 3]
+adaboost.fit(X_train, y_train)[cite: 3]
+
+y_pred_ab = adaboost.predict(X_test)[cite: 3]
+y_prob_ab = adaboost.predict_proba(X_test)[:, 1][cite: 3]
+
+# =========================================================
+# Step 4: Evaluate Both Models
+# =========================================================
+print("\n--- Random Forest Results ---")[cite: 3]
+print("Accuracy :", accuracy_score(y_test, y_pred_rf))[cite: 3]
+print("Precision:", precision_score(y_test, y_pred_rf))[cite: 3]
+print("Recall   :", recall_score(y_test, y_pred_rf))[cite: 3]
+print("F1-Score :", f1_score(y_test, y_pred_rf))[cite: 3]
+print("ROC-AUC  :", roc_auc_score(y_test, y_prob_rf))[cite: 3]
+
+print("\n--- AdaBoost Results ---")[cite: 3]
+print("Accuracy :", accuracy_score(y_test, y_pred_ab))[cite: 3]
+print("Precision:", precision_score(y_test, y_pred_ab))[cite: 3]
+print("Recall   :", recall_score(y_test, y_pred_ab))[cite: 3]
+print("F1-Score :", f1_score(y_test, y_pred_ab))[cite: 3]
+print("ROC-AUC  :", roc_auc_score(y_test, y_prob_ab))[cite: 3]
+
+# =========================================================
+# Step 5: Plot ROC Curves
+# =========================================================
+fpr_rf, tpr_rf, _ = roc_curve(y_test, y_prob_rf)[cite: 3]
+fpr_ab, tpr_ab, _ = roc_curve(y_test, y_prob_ab)[cite: 3]
+
+plt.figure(figsize=(8, 6))[cite: 3]
+plt.plot(fpr_rf, tpr_rf, label="Random Forest")[cite: 3]
+plt.plot(fpr_ab, tpr_ab, label="AdaBoost")[cite: 3]
+plt.plot([0, 1], [0, 1], "--")[cite: 3]
+plt.xlabel("False Positive Rate")[cite: 3]
+plt.ylabel("True Positive Rate")[cite: 3]
+plt.title("ROC Curve")[cite: 3]
+plt.legend()[cite: 3]
+plt.show()[cite: 3]
+
+############################################################################
+</code></pre>
+
+</body>
+</html>
